@@ -252,9 +252,9 @@ void displayBoth(time_t ntp, time_t rtc)
     oled.display();
 }
 
-volatile time_t isrUTC;         // ISR's copy of current time in UTC
+volatile time_t isrUTC;         // ISR's copy of current RTC time in UTC
 
-// return current time
+// return current RTC time
 time_t getUTC()
 {
     noInterrupts();
@@ -263,7 +263,7 @@ time_t getUTC()
     return utc;
 }
 
-// set the current time
+// set the current RTC time
 void setUTC(time_t utc)
 {
     noInterrupts();
