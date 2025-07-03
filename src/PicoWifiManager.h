@@ -18,6 +18,8 @@ class PicoWifiManager
         bool run();
         void getCreds();            // get wifi credentials from the user
         void resetMCU(int seconds);
+        String getHostname() {return creds.hostname;}
+        String getIP() {return WiFi.localIP().toString().c_str();}
 
     private:
         m_states_t m_state {CONNECT};

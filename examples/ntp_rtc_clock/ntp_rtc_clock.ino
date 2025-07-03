@@ -38,6 +38,7 @@ Adafruit_SSD1306 oled(OLED_WIDTH, OLED_HEIGHT, &Wire);
 GenericRTC* rtc;
 Button btn(btnPin);
 bool rtcIsDS{false}, rtcIsMCP{false};
+time_t rtcLastSet;  // for MCP RTC only
 
 void setup()
 {
@@ -58,8 +59,8 @@ void setup()
     }
     oled.display();  // library initializes with adafruit logo
     delay(1000);
-    oled.clearDisplay();
     oled.setTextSize(2);
+    oled.clearDisplay();
     oled.setTextColor(SSD1306_WHITE);
     
     // set up and initialize the RTC
@@ -83,7 +84,7 @@ void setup()
 
 void loop()
 {
-    static int dispState{0};    // 0=NTP, 1=RTC, 2=BOTH
+    static int dispState{0};    // 0=NTP, 1=RTC, 2=BOTH, 3=INFO
     static time_t ntpLast{0}, rtcLast{0};
     
     bool wifiStatus = wifi.run();
@@ -93,7 +94,7 @@ void loop()
         btn.read();
         if (btn.wasReleased()) {
             ntpLast = rtcLast = 0;
-            if (++dispState > 2) dispState = 0;
+            if (++dispState > 3) dispState = 0;
         }
         else if (btn.pressedFor(1000)) {
             mySerial << "Setting RTC...\n";
@@ -127,6 +128,13 @@ void loop()
                     ntpLast = ntpNow;
                     rtcLast = rtcNow;
                     displayBoth(ntpNow, rtcNow);
+                }
+                break;
+
+            case 3:
+                if (ntpLast != ntpNow) {
+                    ntpLast = ntpNow;
+                    displayInfo();
                 }
                 break;
         }
@@ -204,10 +212,11 @@ GenericRTC* findRTC()
     
         // print the time the RTC was last set (from RTC SRAM)
         union {uint8_t b[4]; time_t t;} lastSet;    // union to access a time_t byte by byte
-        mcp_rtc->readRTC(RTC_SET_ADDR, lastSet.b, 4);        
+        mcp_rtc->readRTC(RTC_SET_ADDR, lastSet.b, 4);
+        rtcLastSet = lastSet.t;
         mySerial.printf("RTC was last set at: %.4d-%.2d-%.2d %.2d:%.2d:%.2d UTC\n",
-            year(lastSet.t), month(lastSet.t), day(lastSet.t),
-            hour(lastSet.t), minute(lastSet.t), second(lastSet.t));    
+            year(rtcLastSet), month(rtcLastSet), day(rtcLastSet),
+            hour(rtcLastSet), minute(rtcLastSet), second(rtcLastSet));    
     
         time_t utc = getUTC();          // synchronize with RTC
         while ( utc == getUTC() );      // wait for increment to the next second
@@ -232,13 +241,14 @@ void setRTC()
     time_t ntpNow = time(nullptr);
     union {uint8_t b[4]; time_t t;} t;      // union to access a time_t byte by byte
     while ((t.t=time(nullptr)) == ntpNow);  // wait for the next second to roll over
-    rtc->set(t.t);
-    setUTC(t.t);
+    rtcLastSet = t.t;
+    rtc->set(rtcLastSet);
+    setUTC(rtcLastSet);
     if (rtcIsMCP) {
         rtc->writeRTC(RTC_SET_ADDR, t.b, 4);    // //save the utc when time set in sram
     }
     mySerial.printf("RTC set to %.4d-%.2d-%.2d %.2d:%.2d:%.2d UTC\n",
-        year(t.t), month(t.t), day(t.t), hour(t.t), minute(t.t), second(t.t));
+        year(rtcLastSet), month(rtcLastSet), day(rtcLastSet), hour(rtcLastSet), minute(rtcLastSet), second(rtcLastSet));
 }
 
 // update oled display
@@ -257,6 +267,7 @@ void displayTime(time_t t, char which)
     gmtime_r(&local, &tminfo);
 
     // update oled display
+    oled.setTextSize(2);
     oled.clearDisplay();
     strftime(msg, 16, " %T", &tminfo);
     oled.setCursor(0, 0);
@@ -278,6 +289,7 @@ void displayBoth(time_t ntp, time_t rtc)
     static char msg[MSG_SIZE];
     struct tm tminfo;
 
+    oled.setTextSize(2);
     oled.clearDisplay();
     gmtime_r(&ntp, &tminfo);
     strftime(msg, 16, " %T", &tminfo);
@@ -294,6 +306,23 @@ void displayBoth(time_t ntp, time_t rtc)
     sprintf(msg, "RTC %+d s", static_cast<int>(rtc-ntp));
     oled.print(msg);
     oled.display();
+}
+
+// show network & RTC information on the oled display
+void displayInfo()
+{
+    oled.setTextSize(1);
+    oled.clearDisplay();
+    oled.setCursor(0, 0);
+    oled.println(wifi.getHostname());
+    oled.println(wifi.getIP());
+    if (rtcIsMCP) {
+        oled.printf("\nRTC last set at:\n%.4d-%.2d-%.2d %.2d:%.2d:%.2d\n",
+            year(rtcLastSet), month(rtcLastSet), day(rtcLastSet),
+            hour(rtcLastSet), minute(rtcLastSet), second(rtcLastSet));         
+    }
+    oled.display();
+    oled.setTextSize(2);
 }
 
 volatile time_t isrUTC;         // ISR's copy of current RTC time in UTC
