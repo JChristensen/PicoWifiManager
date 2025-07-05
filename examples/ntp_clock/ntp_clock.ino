@@ -26,6 +26,8 @@ PicoWifiManager wifi(mySerial);
 Adafruit_SSD1306 oled(OLED_WIDTH, OLED_HEIGHT, &Wire);
 Button btn(btnPin);
 
+void displayTime(time_t t, bool localTime=false);   // function prototype
+
 void setup()
 {
     pinMode(wifiLED, OUTPUT);
@@ -61,16 +63,40 @@ void setup()
 
 void loop()
 {
+    static int dispState{0};    // 0=Local time, 1=UTC, 2=INFO
     static time_t ntpLast{0};
     
     bool wifiStatus = wifi.run();
     digitalWrite(wifiLED, wifiStatus);
     
     if (wifiStatus) {
+        btn.read();
+        if (btn.wasReleased()) {
+            ntpLast = 0;
+            if (++dispState > 2) dispState = 0;
+        }        
         time_t ntpNow = time(nullptr);
-        if (ntpLast != ntpNow) {
-            ntpLast = ntpNow;
-            displayTime(ntpNow);
+        switch (dispState) {
+            case 0:
+                if (ntpLast != ntpNow) {
+                    ntpLast = ntpNow;
+                    displayTime(ntpNow);
+                }
+                break;
+
+            case 1:
+                if (ntpLast != ntpNow) {
+                    ntpLast = ntpNow;
+                    displayTime(ntpNow, true);
+                }
+                break;
+
+            case 2:
+                if (ntpLast != ntpNow) {
+                    ntpLast = ntpNow;
+                    displayInfo();
+                }
+                break;
         }
 
         // print ntp time to serial once a minute
@@ -92,7 +118,7 @@ void loop()
 }
 
 // update oled display
-void displayTime(time_t t)
+void displayTime(time_t t, bool localTime)
 {
     constexpr TimeChangeRule edt {"EDT", Second, Sun, Mar, 2, -240};  // Daylight time = UTC - 4 hours
     constexpr TimeChangeRule est {"EST", First, Sun, Nov, 2, -300};   // Standard time = UTC - 5 hours
@@ -102,9 +128,10 @@ void displayTime(time_t t)
     static char msg[MSG_SIZE];
 
     TimeChangeRule* tcr;
-    time_t local = eastern.toLocal(t, &tcr);
+    time_t disp = localTime ? eastern.toLocal(t, &tcr) : t;
+    String zone = localTime ? tcr->abbrev : "UTC";
     struct tm tminfo;
-    gmtime_r(&local, &tminfo);
+    gmtime_r(&disp, &tminfo);
 
     // update oled display
     oled.clearDisplay();
@@ -114,8 +141,24 @@ void displayTime(time_t t)
     strftime(msg, 16, "%a %d %b", &tminfo);
     oled.setCursor(0, 20);
     oled.println(msg);
-    sprintf(msg, " %d %s", tminfo.tm_year+1900, tcr->abbrev);
+    sprintf(msg, " %d %s", tminfo.tm_year+1900, zone.c_str());
     oled.setCursor(0, 42);
     oled.println(msg);
     oled.display();
+}
+
+// show network & other information on the oled display
+void displayInfo()
+{
+    oled.setTextSize(1);
+    oled.clearDisplay();
+    oled.setCursor(0, 0);
+    oled.println(wifi.getHostname());
+    oled.println(wifi.getIP());
+    oled.println(BOARD_NAME);
+    float pico_c = analogReadTemp();
+    float pico_f = 1.8 * pico_c + 32.0;
+    oled.printf("%d MHz %.1fC %.1fF\n", F_CPU/1000000, pico_c, pico_f);
+    oled.display();
+    oled.setTextSize(2);
 }

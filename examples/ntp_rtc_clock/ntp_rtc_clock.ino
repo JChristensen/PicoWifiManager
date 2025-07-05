@@ -15,6 +15,7 @@
 #include <DS3232RTC.h>          // https://github.com/JChristensen/DS3232RTC
 #include <JC_Button.h>          // https://github.com/JChristensen/JC_Button
 #include <MCP79412RTC.h>        // https://github.com/JChristensen/MCP79412RTC
+#include <MCP9800.h>            // https://github.com/JChristensen/MCP9800
 #include <PicoWifiManager.h>    // https://github.com/JChristensen/PicoWifiManager
 #include <Streaming.h>          // https://github.com/janelia-arduino/Streaming
 #include <Timezone.h>           // https://github.com/JChristensen/Timezone
@@ -37,7 +38,8 @@ PicoWifiManager wifi(mySerial);
 Adafruit_SSD1306 oled(OLED_WIDTH, OLED_HEIGHT, &Wire);
 GenericRTC* rtc;
 Button btn(btnPin);
-bool rtcIsDS{false}, rtcIsMCP{false};
+MCP9800 tempSensor(Wire1);
+bool rtcIsDS{false}, rtcIsMCP{false}, haveMCPTemp{false};
 time_t rtcLastSet;  // for MCP RTC only
 
 void setup()
@@ -68,8 +70,13 @@ void setup()
     pinMode(RTC_1HZ_PIN, INPUT_PULLUP);
     attachInterrupt(digitalPinToInterrupt(RTC_1HZ_PIN), incrementTime, FALLING);
 
-    // determine which type of RTC we have and perform appropriate setup
+    // check for MCP9800 temperature sensor
     Wire1.begin();
+    Wire1.beginTransmission(MCP9800::BASE_ADDR);
+    haveMCPTemp = (Wire1.endTransmission() == 0);
+    if (haveMCPTemp) tempSensor.writeConfig(MCP9800::ADC_RES_12BITS);   // max resolution, 0.0625 °C
+
+    // determine which type of RTC we have and perform appropriate setup
     rtc = findRTC();
 
     // check to see if the user wants to enter new wifi credentials, else initialize wifi.
@@ -308,7 +315,7 @@ void displayBoth(time_t ntp, time_t rtc)
     oled.display();
 }
 
-// show network & RTC information on the oled display
+// show network & other information on the oled display
 void displayInfo()
 {
     oled.setTextSize(1);
@@ -316,10 +323,24 @@ void displayInfo()
     oled.setCursor(0, 0);
     oled.println(wifi.getHostname());
     oled.println(wifi.getIP());
+    oled.println(BOARD_NAME);
+    float pico_c = analogReadTemp();
+    float pico_f = 1.8 * pico_c + 32.0;
+    oled.printf("%d MHz %.1fC %.1fF\n", F_CPU/1000000, pico_c, pico_f);
     if (rtcIsMCP) {
-        oled.printf("\nRTC last set at:\n%.4d-%.2d-%.2d %.2d:%.2d:%.2d\n",
+        oled.printf("\nRTC was last set:\n%.4d-%.2d-%.2d %.2d:%.2d:%.2d\n",
             year(rtcLastSet), month(rtcLastSet), day(rtcLastSet),
-            hour(rtcLastSet), minute(rtcLastSet), second(rtcLastSet));         
+            hour(rtcLastSet), minute(rtcLastSet), second(rtcLastSet));
+    }
+    else if (rtcIsDS) {
+        float rtc_c = rtc->temperature() / 4.0;
+        float rtc_f =  1.8 * rtc_c + 32.0;
+        oled.printf("\nRTC Temp %.1fC %.1fF\n", rtc_c, rtc_f);
+    }
+    if (haveMCPTemp) {
+        float rtc_c = tempSensor.readTempC16(MCP9800::AMBIENT) / 16.0;
+        float rtc_f =  1.8 * rtc_c + 32.0;
+        oled.printf("MCP Temp %.1fC %.1fF\n", rtc_c, rtc_f);
     }
     oled.display();
     oled.setTextSize(2);
