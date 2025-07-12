@@ -32,6 +32,7 @@ void setup()
 {
     pinMode(wifiLED, OUTPUT);
     btn.begin();
+    Serial2.setTX(4); Serial2.setRX(5);
     mySerial.begin(115200);
     while (!mySerial && millis() < 2000) delay(50);
     mySerial.printf("\n%s\nCompiled %s %s %s @ %d MHz\n",
@@ -65,16 +66,16 @@ void loop()
 {
     static int dispState{0};    // 0=Local time, 1=UTC, 2=INFO
     static time_t ntpLast{0};
-    
+
     bool wifiStatus = wifi.run();
     digitalWrite(wifiLED, wifiStatus);
-    
+
     if (wifiStatus) {
         btn.read();
         if (btn.wasReleased()) {
             ntpLast = 0;
             if (++dispState > 2) dispState = 0;
-        }        
+        }
         time_t ntpNow = time(nullptr);
         switch (dispState) {
             case 0:
@@ -103,8 +104,8 @@ void loop()
         static time_t printLast{0};
         if (printLast != ntpNow && second(ntpNow) == 0) {
             printLast = ntpNow;
-            mySerial.printf("NTP %.4d-%.2d-%.2d %.2d:%.2d:%.2d UTC\n",
-                year(ntpNow), month(ntpNow), day(ntpNow),
+            mySerial.printf("%d NTP %.4d-%.2d-%.2d %.2d:%.2d:%.2d UTC\n",
+                millis(), year(ntpNow), month(ntpNow), day(ntpNow),
                 hour(ntpNow), minute(ntpNow), second(ntpNow));
         }
     }
@@ -156,6 +157,7 @@ void displayInfo()
     oled.println(wifi.getHostname());
     oled.print(WiFi.localIP());
     oled.printf(" %d dBm\n", WiFi.RSSI());
+    oled.println(wifi.getSSID());
     oled.println(BOARD_NAME);
     float pico_c = analogReadTemp();
     float pico_f = 1.8 * pico_c + 32.0;

@@ -64,7 +64,7 @@ void setup()
     oled.setTextSize(2);
     oled.clearDisplay();
     oled.setTextColor(SSD1306_WHITE);
-    
+
     // set up and initialize the RTC
     Wire1.setSDA(wire1SdaPin); Wire1.setSCL(wire1SclPin); Wire1.setClock(400000);
     pinMode(RTC_1HZ_PIN, INPUT_PULLUP);
@@ -93,10 +93,10 @@ void loop()
 {
     static int dispState{0};    // 0=NTP, 1=RTC, 2=BOTH, 3=INFO
     static time_t ntpLast{0}, rtcLast{0};
-    
+
     bool wifiStatus = wifi.run();
     digitalWrite(wifiLED, wifiStatus);
-    
+
     if (wifiStatus) {
         btn.read();
         if (btn.wasReleased()) {
@@ -216,15 +216,15 @@ GenericRTC* findRTC()
         else {
             mySerial.printf("RTC calibration value: %d\n", mcp_rtc->calibRead());
         }
-    
+
         // print the time the RTC was last set (from RTC SRAM)
         union {uint8_t b[4]; time_t t;} lastSet;    // union to access a time_t byte by byte
         mcp_rtc->readRTC(RTC_SET_ADDR, lastSet.b, 4);
         rtcLastSet = lastSet.t;
         mySerial.printf("RTC was last set at: %.4d-%.2d-%.2d %.2d:%.2d:%.2d UTC\n",
             year(rtcLastSet), month(rtcLastSet), day(rtcLastSet),
-            hour(rtcLastSet), minute(rtcLastSet), second(rtcLastSet));    
-    
+            hour(rtcLastSet), minute(rtcLastSet), second(rtcLastSet));
+
         time_t utc = getUTC();          // synchronize with RTC
         while ( utc == getUTC() );      // wait for increment to the next second
         utc = mcp_rtc->get();           // get the time from the RTC
@@ -324,24 +324,25 @@ void displayInfo()
     oled.println(wifi.getHostname());
     oled.print(WiFi.localIP());
     oled.printf(" %d dBm\n", WiFi.RSSI());
+    oled.println(wifi.getSSID());
     oled.println(BOARD_NAME);
     float pico_c = analogReadTemp();
     float pico_f = 1.8 * pico_c + 32.0;
     oled.printf("%d MHz %.1fC %.1fF\n", F_CPU/1000000, pico_c, pico_f);
     if (rtcIsMCP) {
-        oled.printf("\nRTC was last set:\n%.4d-%.2d-%.2d %.2d:%.2d:%.2d\n",
+        oled.printf("RTC last set:\n%.4d-%.2d-%.2d %.2d:%.2d:%.2d\n",
             year(rtcLastSet), month(rtcLastSet), day(rtcLastSet),
             hour(rtcLastSet), minute(rtcLastSet), second(rtcLastSet));
     }
     else if (rtcIsDS) {
         float rtc_c = rtc->temperature() / 4.0;
         float rtc_f =  1.8 * rtc_c + 32.0;
-        oled.printf("\nRTC Temp %.1fC %.1fF\n", rtc_c, rtc_f);
+        oled.printf("RTC %.1fC %.1fF\n", rtc_c, rtc_f);
     }
     if (haveMCPTemp) {
         float rtc_c = tempSensor.readTempC16(MCP9800::AMBIENT) / 16.0;
         float rtc_f =  1.8 * rtc_c + 32.0;
-        oled.printf("MCP Temp %.1fC %.1fF\n", rtc_c, rtc_f);
+        oled.printf("MCP %.1fC %.1fF\n", rtc_c, rtc_f);
     }
     oled.display();
     oled.setTextSize(2);

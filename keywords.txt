@@ -1,7 +1,8 @@
-PicoWifiManager KEYWORD1
-begin   KEYWORD2
-run KEYWORD2
-getCreds    KEYWORD2
-resetMCU    KEYWORD2
-getHostname KEYWORD2
-getIP   KEYWORD2
+PicoWifiManager	KEYWORD1
+begin	KEYWORD2
+run	KEYWORD2
+getCreds	KEYWORD2
+resetMCU	KEYWORD2
+getHostname	KEYWORD2
+getSSID	KEYWORD2
+getIP	KEYWORD2
