@@ -10,6 +10,9 @@
 // object instantiations and globals
 HardwareSerial& mySerial {Serial2}; // choose Serial, Serial1 or Serial2 here
 constexpr int txPin {4}, rxPin {5};
+constexpr uint32_t getInterval {900000}, retryInterval {60000}, respTimeout {60000};
+const char* host = "wttr.in";
+constexpr uint16_t port = 80;
 PicoWifiManager wifi(mySerial);
 
 void setup()
@@ -24,11 +27,7 @@ void setup()
 
 void loop()
 {
-    const char* host = "wttr.in";
-    const uint16_t port = 80;
-    constexpr uint32_t getInterval {300000}, retryInterval {10000}, respTimeout {10000};
-
-    enum states_t {CONNECT, WAIT_RETRY, WAIT_RECV, PRINT_RESPONSE, WAIT_CONNECT};
+    enum states_t {CONNECT, WAIT_RETRY, WAIT_RECV, PROCESS_RESPONSE, WAIT_CONNECT};
     static states_t state {CONNECT};
     static WiFiClient client;
     static uint32_t msTimer, msLastConnect;
@@ -64,7 +63,7 @@ void loop()
 
             case WAIT_RECV:
                 if (client.available() > 0) {
-                    state = PRINT_RESPONSE;
+                    state = PROCESS_RESPONSE;
                     mySerial.printf("%d Receiving from server...\n", msNow);
                 }
                 else if (msNow - msTimer >= respTimeout) {
@@ -74,17 +73,52 @@ void loop()
                 }
                 break;
 
-            case PRINT_RESPONSE:
-                if (client.available()) {
-                    char ch = static_cast<char>(client.read());
-                    mySerial.print(ch);
+            case PROCESS_RESPONSE: {
+                uint nbytes = client.available();   // number of characters in received packet
+                const char http200[14] {"HTTP/1.1 200 "};   // good status
+                if (nbytes >= sizeof(http200)) {
+                    // collect enough characters to check the status
+                    char statusBuf[14];     // buffer to store the first header line
+                    char* p {statusBuf};
+                    for (uint i=0; i<sizeof(http200); i++) *p++ = client.read();
+                    if (strncmp(statusBuf, http200, sizeof(http200)-1) == 0) {
+                        // good response, drop the headers, i.e. everything up to and including \r\n\r\n
+                        while (client.available()) {
+                            if (client.read() == '\r') {
+                                if (client.read() == '\n') {
+                                    if (client.read() == '\r') {
+                                        if (client.read() == '\n') {
+                                            while (client.available()) {
+                                                mySerial.print(static_cast<char>(client.read()));
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else {
+                        mySerial.print("HTTP error!\n");
+                        mySerial.print(statusBuf);
+                        while (client.available()) {
+                            char ch = static_cast<char>(client.read());
+                            mySerial.print(ch);
+                        }
+                    }
                 }
                 else {
-                    state = WAIT_CONNECT;
-                    mySerial.printf("%d Closing connection.\n", msNow);
-                    client.stop();
+                    mySerial.print("Error, packet too short!\n");
+                    while (client.available()) {
+                        char ch = static_cast<char>(client.read());
+                        mySerial.print(ch);
+                    }
                 }
+                
+                state = WAIT_CONNECT;
+                mySerial.printf("%d Closing connection.\n", msNow);
+                client.stop();
                 break;
+            }
 
             case WAIT_CONNECT:
                 if (msNow - msLastConnect >= getInterval) state = CONNECT;
