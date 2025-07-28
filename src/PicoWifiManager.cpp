@@ -117,22 +117,26 @@ void PicoWifiManager::getCreds()
     char* p = reinterpret_cast<char*>(&creds);
     for (uint i=0; i<sizeof(creds); i++) *(p+i) = '\0';
 
+    m_Serial.printf("\nEnter the hostname for this Pico: ");
+    int nBytes = m_Serial.readBytesUntil('\n', creds.hostname, sizeof(creds.hostname)-1);
+    creds.hostname[nBytes] = '\0';
+
     m_Serial.printf("\nEnter the wifi SSID: ");
-    int nBytes = m_Serial.readBytesUntil('\n', creds.ssid, sizeof(creds.ssid)-1);
+    nBytes = m_Serial.readBytesUntil('\n', creds.ssid, sizeof(creds.ssid)-1);
     creds.ssid[nBytes] = '\0';
 
     m_Serial.printf("\nEnter the wifi PSK: ");
     nBytes = m_Serial.readBytesUntil('\n', creds.psk, sizeof(creds.psk)-1);
     creds.psk[nBytes] = '\0';
 
-    m_Serial.printf("\nEnter the hostname for this Pico: ");
-    nBytes = m_Serial.readBytesUntil('\n', creds.hostname, sizeof(creds.hostname)-1);
-    creds.hostname[nBytes] = '\0';
+    m_Serial.printf("\nEnter the API key: ");
+    nBytes = m_Serial.readBytesUntil('\n', creds.apiKey, sizeof(creds.apiKey)-1);
+    creds.apiKey[nBytes] = '\0';
 
     creds.signature = m_haveCreds;
     m_Serial << "\nWriting credentials to EEPROM.\n";
     writeCreds();
-    resetMCU(3);
+    //resetMCU(3);
 }
 
 // write wifi credentials to EEPROM

@@ -18,8 +18,10 @@ class PicoWifiManager
         bool run();
         void getCreds();            // get wifi credentials from the user
         void resetMCU(int seconds);
-        String getHostname() {return creds.hostname;}
-        String getSSID() {return creds.ssid;}
+        char* getHostname() {return creds.hostname;}
+        char* getSSID() {return creds.ssid;}
+        char* getPSK() {return creds.psk;}
+        char* getApiKey() {return creds.apiKey;}
         String getIP() {return WiFi.localIP().toString().c_str();}
 
     private:
@@ -40,6 +42,7 @@ class PicoWifiManager
             char hostname[32] {};   // hostname for the pico
             char ssid[64] {};       // wifi ssid
             char psk[80] {};        // wifi psk
+            char apiKey[40] {};     // api key, e.g. for GroveStreams
         };
         PicoCreds creds;
         void writeCreds();          // write wifi credentials to EEPROM

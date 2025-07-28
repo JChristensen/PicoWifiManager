@@ -10,9 +10,10 @@
 // object instantiations and globals
 HardwareSerial& mySerial {Serial2}; // choose Serial, Serial1 or Serial2 here
 constexpr int txPin {4}, rxPin {5};
-constexpr uint32_t getInterval {900000}, retryInterval {60000}, respTimeout {60000};
+constexpr uint32_t getInterval {600000}, retryInterval {60000}, respTimeout {60000};
 const char* host = "wttr.in";
 constexpr uint16_t port = 80;
+constexpr int waitLED {7};
 PicoWifiManager wifi(mySerial);
 
 void setup()
@@ -22,6 +23,7 @@ void setup()
     while (!mySerial && millis() < 2000) delay(50);
     mySerial.printf("\n%s\nCompiled %s %s %s @ %d MHz\n",
         __FILE__, __DATE__, __TIME__, BOARD_NAME, F_CPU / 1000000);
+    pinMode(waitLED, OUTPUT);
     wifi.begin();
 }
 
@@ -42,6 +44,7 @@ void loop()
                     mySerial.printf("\n%d %.4d-%.2d-%.2d %.2d:%.2d:%.2d ",
                                     msNow, year(t), month(t), day(t), hour(t), minute(t), second(t));
                     mySerial.printf("Sending request to %s ...\n", host);
+                    digitalWrite(waitLED, HIGH);
                     client.printf(
                         "GET / HTTP/1.1\r\n"
                         "Host: %s\r\n"
@@ -53,6 +56,7 @@ void loop()
                 else {
                     state = WAIT_RETRY;
                     msTimer = msNow;
+                    digitalWrite(waitLED, LOW);
                     mySerial.printf("%d Connect failed, wait for retry...\n", msNow);
                 }
                 break;
@@ -64,10 +68,12 @@ void loop()
             case WAIT_RECV:
                 if (client.available() > 0) {
                     state = PROCESS_RESPONSE;
+                    digitalWrite(waitLED, LOW);
                     mySerial.printf("%d Receiving from server...\n", msNow);
                 }
                 else if (msNow - msTimer >= respTimeout) {
                     client.stop();
+                    digitalWrite(waitLED, LOW);
                     state = CONNECT;
                     mySerial.printf("%d Response timeout!\n", msNow);
                 }
@@ -113,7 +119,7 @@ void loop()
                         mySerial.print(ch);
                     }
                 }
-                
+
                 state = WAIT_CONNECT;
                 mySerial.printf("%d Closing connection.\n", msNow);
                 client.stop();
