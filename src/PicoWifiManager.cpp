@@ -28,14 +28,15 @@ bool PicoWifiManager::run()
                 resetMCU(10);
             }
             m_state = CONNECT_WAIT;
-            m_Serial.printf("%d Connecting to: %s\n", millis(), creds.ssid);
+            m_Serial.printf("%d Connecting to wifi...\n", millis());
             m_lastTry = millis();
             WiFi.setHostname(creds.hostname);
-            WiFi.begin(creds.ssid, creds.psk);
+            //WiFi.begin(creds.ssid, creds.psk);
+            multi.run();
             m_waitTimer = millis();
             break;
 
-        // wait a few seconds for the connection.
+        // wait a bit for the connection.
         case CONNECT_WAIT:
             if (millis() - m_waitTimer >= m_connectWait) {
                 m_state = CONNECT_CHECK;
@@ -47,8 +48,9 @@ bool PicoWifiManager::run()
         case CONNECT_CHECK:
             if (WiFi.status() == WL_CONNECTED) {
                 m_state = NTP_WAIT;
-                m_Serial.printf("%d WiFi connected %s %s %d dBm\n",
-                    millis(), WiFi.localIP().toString().c_str(), creds.hostname, WiFi.RSSI());
+                m_Serial.printf("%d Connected to %s %s %s %d dBm\n",
+                    millis(), WiFi.SSID().c_str(),
+                    WiFi.localIP().toString().c_str(), creds.hostname, WiFi.RSSI());
                 m_retryCount = 0;
                 m_Serial.printf("%d Starting NTP\n", millis());
                 NTP.begin("pool.ntp.org");
@@ -76,7 +78,7 @@ bool PicoWifiManager::run()
             else if (ms - m_waitTimer >= 10) {
                 m_waitTimer = ms;
                 time_t now = time(nullptr);
-                if (now > 8 * 3600 * 2) {
+                if (now >= 1735689600) {    // 01Jan2025
                     m_state = MONITOR;
                     m_connected = true;
                     struct tm tminfo;
@@ -149,6 +151,8 @@ void PicoWifiManager::writeCreds()
 // read wifi credentials from EEPROM
 bool PicoWifiManager::readCreds()
 {
+    multi.addAP("ssid1", "psk1");   // for testing only until creds saved in eeprom
+    multi.addAP("ssid2", "psk2");
     EEPROM.get(m_credsAddr, creds);
     return (creds.signature == m_haveCreds);
 }

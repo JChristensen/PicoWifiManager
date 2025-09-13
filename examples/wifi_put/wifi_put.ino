@@ -54,6 +54,7 @@ void loop()
     static states_t state {WAIT_CONNECT};
     static WiFiClient client;
     static uint32_t msTimer;
+    static int seq {1};
     uint32_t msNow = millis();
 
     if (wifi.run()) {
@@ -68,11 +69,11 @@ void loop()
                     digitalWrite(waitLED, HIGH);
                     client.printf(
                         "PUT /api/feed?&api_key=%s&compID=%s"
-                        "&temp=%.2f"
+                        "&seq=%d&temp=%.2f"
                         " HTTP/1.1\r\nHost: %s\r\n"
                         "Connection: close\r\nX-Forwarded-For: %s\r\n"
                         "Content-Type: application/json\r\n\r\n",
-                        apiKey, compID, analogReadTemp(), host, compID);
+                        apiKey, compID, seq, analogReadTemp(), host, compID);
                     msTimer = msNow;
                 }
                 else {
@@ -112,6 +113,7 @@ void loop()
                     *p++ = '\0';
                     if (strncmp(statusBuf, http200, sizeof(http200)-1) == 0) {
                         mySerial.printf("%s(OK)\n", statusBuf);
+                        ++seq;
                         // good response, drop the rest
                         while (client.available()) {
                             client.read();

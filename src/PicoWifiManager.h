@@ -19,9 +19,9 @@ class PicoWifiManager
         void getCreds();            // get wifi credentials from the user
         void resetMCU(int seconds);
         char* getHostname() {return creds.hostname;}
+        char* getApiKey() {return creds.apiKey;}
         char* getSSID() {return creds.ssid;}
         char* getPSK() {return creds.psk;}
-        char* getApiKey() {return creds.apiKey;}
         String getIP() {return WiFi.localIP().toString().c_str();}
 
     private:
@@ -31,7 +31,7 @@ class PicoWifiManager
         int m_retryCount {0};
         uint m_lastTry;             // last time we tried to connect
         static constexpr uint m_minRetryWait {15000};   // minimum wait between retries
-        static constexpr uint m_connectWait {3000};
+        static constexpr uint m_connectWait {1000};
         static constexpr uint m_monitorWait {1000};
         static constexpr int m_maxRetries {10};
         static constexpr uint m_maxNtpWait {60000};
@@ -50,4 +50,5 @@ class PicoWifiManager
         static constexpr uint m_eepromSize {256};
         static constexpr uint m_credsAddr {0};      // EEPROM start address for credentials
         static constexpr uint32_t m_haveCreds {0xdeadbeef};
+        WiFiMulti multi;
 };

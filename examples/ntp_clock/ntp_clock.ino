@@ -1,4 +1,4 @@
-// An NTP and clock for Raspberry Pi Pico W/2W.
+// An NTP clock for Raspberry Pi Pico W/2W.
 // Wifi credentials are stored in EEPROM. If credientials were not saved
 // previously, then the sketch will prompt for them.
 // Hold the button down while resetting the MCU to change wifi credentials.
@@ -21,7 +21,7 @@ constexpr int OLED_HEIGHT {64};     // OLED display height, in pixels
 constexpr int OLED_ADDRESS {0x3c};  // OLED I2C address
 
 // object instantiations and globals
-HardwareSerial& mySerial {Serial};  // choose Serial, Serial1 or Serial2 here
+HardwareSerial& mySerial {Serial2};  // choose Serial, Serial1 or Serial2 here
 PicoWifiManager wifi(mySerial);
 Adafruit_SSD1306 oled(OLED_WIDTH, OLED_HEIGHT, &Wire);
 Button btn(btnPin);
@@ -34,6 +34,7 @@ void setup()
     btn.begin();
     Serial2.setTX(4); Serial2.setRX(5);
     mySerial.begin(115200);
+    delay(500);
     while (!mySerial && millis() < 2000) delay(50);
     mySerial.printf("\n%s\nCompiled %s %s %s @ %d MHz\n",
         __FILE__, __DATE__, __TIME__, BOARD_NAME, F_CPU/1000000);
