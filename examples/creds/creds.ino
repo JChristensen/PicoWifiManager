@@ -18,7 +18,7 @@ void setup()
 {
     btn.begin();
     Serial2.setTX(4); Serial2.setRX(5);
-    mySerial.begin(115200);
+    mySerial.begin(115200); delay(500);
     while (!mySerial && millis() < 2000) delay(50); delay(250);
     mySerial.printf("\n%s\nCompiled %s %s %s @ %d MHz\n",
         __FILE__, __DATE__, __TIME__, BOARD_NAME, F_CPU/1000000);
@@ -34,12 +34,20 @@ void loop()
         wifi.getCreds();
         while (btn.isPressed()) btn.read();
         mySerial.printf("\nReading...\n");
-        mySerial.printf("hostname %s\nssid %s\npsk %s\nAPI key %s\n",
-            wifi.getHostname(), wifi.getSSID(), wifi.getPSK(), wifi.getApiKey());
+        mySerial.printf("hostname %s\nAPI key %s\n",
+            wifi.getHostname(), wifi.getApiKey());
+        for (int n=0; n<wifi.getSSIDCount(); ++n) {
+            mySerial.printf("ssid %s\npsk %s\n",
+                wifi.getSSID(n), wifi.getPSK(n));
+        }
     }
     else if (btn.wasReleased()) {
         mySerial.printf("\nReading...\n");
-        mySerial.printf("hostname %s\nssid %s\npsk %s\nAPI key %s\n",
-            wifi.getHostname(), wifi.getSSID(), wifi.getPSK(), wifi.getApiKey());
+        mySerial.printf("hostname %s\nAPI key %s\n",
+            wifi.getHostname(), wifi.getApiKey());
+        for (int n=0; n<wifi.getSSIDCount(); ++n) {
+            mySerial.printf("ssid %s\npsk %s\n",
+                wifi.getSSID(n), wifi.getPSK(n));
+        }
     }
 }

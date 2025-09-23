@@ -20,8 +20,9 @@ class PicoWifiManager
         void resetMCU(int seconds);
         char* getHostname() {return creds.hostname;}
         char* getApiKey() {return creds.apiKey;}
-        char* getSSID() {return creds.ssid;}
-        char* getPSK() {return creds.psk;}
+        int getSSIDCount() {return creds.ssidCount;}
+        char* getSSID(int n) {return creds.ssid[n];}
+        char* getPSK(int n) {return creds.psk[n];}
         String getIP() {return WiFi.localIP().toString().c_str();}
 
     private:
@@ -38,17 +39,18 @@ class PicoWifiManager
         uint m_waitTimer;
         uint m_ntpStart;
         struct PicoCreds {
-            uint32_t signature {};  // write signature
-            char hostname[32] {};   // hostname for the pico
-            char ssid[64] {};       // wifi ssid
-            char psk[80] {};        // wifi psk
+            char hostname[16] {};   // hostname for the pico
+            uint signature {};      // write signature
             char apiKey[40] {};     // api key, e.g. for GroveStreams
+            int ssidCount {};       // number of ssid/psk pairs
+            char ssid[4][32] {};    // wifi ssids
+            char psk[4][64] {};     // wifi psks
         };
         PicoCreds creds;
         void writeCreds();          // write wifi credentials to EEPROM
         bool readCreds();           // read wifi credentials from EEPROM
-        static constexpr uint m_eepromSize {256};
-        static constexpr uint m_credsAddr {0};      // EEPROM start address for credentials
+        static constexpr uint m_eepromSize {512};
+        static constexpr uint m_credsAddr {0};  // EEPROM start address for credentials
         static constexpr uint32_t m_haveCreds {0xdeadbeef};
         WiFiMulti multi;
 };

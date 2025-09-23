@@ -123,22 +123,32 @@ void PicoWifiManager::getCreds()
     int nBytes = m_Serial.readBytesUntil('\n', creds.hostname, sizeof(creds.hostname)-1);
     creds.hostname[nBytes] = '\0';
 
-    m_Serial.printf("\nEnter the wifi SSID: ");
-    nBytes = m_Serial.readBytesUntil('\n', creds.ssid, sizeof(creds.ssid)-1);
-    creds.ssid[nBytes] = '\0';
-
-    m_Serial.printf("\nEnter the wifi PSK: ");
-    nBytes = m_Serial.readBytesUntil('\n', creds.psk, sizeof(creds.psk)-1);
-    creds.psk[nBytes] = '\0';
-
     m_Serial.printf("\nEnter the API key: ");
     nBytes = m_Serial.readBytesUntil('\n', creds.apiKey, sizeof(creds.apiKey)-1);
     creds.apiKey[nBytes] = '\0';
 
+    int n {0};
+    while (n < 4) {
+        m_Serial.printf("\nEnter #%d wifi SSID: ", n+1);
+        nBytes = m_Serial.readBytesUntil('\n', creds.ssid[n], sizeof(creds.ssid[n])-1);
+        creds.ssid[n][nBytes] = '\0';
+
+        m_Serial.printf("\nEnter #%d wifi PSK: ", n+1);
+        nBytes = m_Serial.readBytesUntil('\n', creds.psk[n], sizeof(creds.psk[n])-1);
+        creds.psk[n][nBytes] = '\0';
+
+        char ans[16] {};
+        if (++n < 4) {
+            m_Serial.printf("\nEnter another SSID? [y/N]: ");
+            nBytes = m_Serial.readBytesUntil('\n', ans, sizeof(ans)-1);
+            if (ans[0] != 'Y' && ans[0] != 'y') break;
+        }
+    }
+
+    creds.ssidCount = n;
     creds.signature = m_haveCreds;
     m_Serial << "\nWriting credentials to EEPROM.\n";
     writeCreds();
-    //resetMCU(3);
 }
 
 // write wifi credentials to EEPROM
@@ -151,9 +161,10 @@ void PicoWifiManager::writeCreds()
 // read wifi credentials from EEPROM
 bool PicoWifiManager::readCreds()
 {
-    multi.addAP("ssid1", "psk1");   // for testing only until creds saved in eeprom
-    multi.addAP("ssid2", "psk2");
     EEPROM.get(m_credsAddr, creds);
+    for (int n=0; n<creds.ssidCount; ++n) {
+        multi.addAP(creds.ssid[n], creds.psk[n]);
+    }
     return (creds.signature == m_haveCreds);
 }
 

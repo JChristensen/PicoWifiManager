@@ -158,7 +158,7 @@ void displayInfo()
     oled.println(wifi.getHostname());
     oled.print(WiFi.localIP());
     oled.printf(" %d dBm\n", WiFi.RSSI());
-    oled.println(wifi.getSSID());
+    oled.println(WiFi.SSID());
     oled.println(BOARD_NAME);
     float pico_c = analogReadTemp();
     float pico_f = 1.8 * pico_c + 32.0;
