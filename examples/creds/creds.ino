@@ -33,21 +33,22 @@ void loop()
     if (btn.pressedFor(1000)) {
         wifi.getCreds();
         while (btn.isPressed()) btn.read();
-        mySerial.printf("\nReading...\n");
-        mySerial.printf("hostname %s\nAPI key %s\n",
-            wifi.getHostname(), wifi.getApiKey());
-        for (int n=0; n<wifi.getSSIDCount(); ++n) {
-            mySerial.printf("ssid %s\npsk %s\n",
-                wifi.getSSID(n), wifi.getPSK(n));
-        }
+        printCreds();
     }
     else if (btn.wasReleased()) {
-        mySerial.printf("\nReading...\n");
-        mySerial.printf("hostname %s\nAPI key %s\n",
-            wifi.getHostname(), wifi.getApiKey());
-        for (int n=0; n<wifi.getSSIDCount(); ++n) {
-            mySerial.printf("ssid %s\npsk %s\n",
-                wifi.getSSID(n), wifi.getPSK(n));
-        }
+        printCreds();
+    }
+}
+
+void printCreds()
+{
+    mySerial.printf("\nReading...\n");
+    mySerial.printf("hostname:%s\nAPI key:%s\n",
+        wifi.getHostname(), wifi.getApiKey());
+    mySerial.printf("MQTT broker:%s port:%d topic:%s\n",
+        wifi.getMqBroker(), wifi.getMqPort(), wifi.getMqTopic());
+    for (int n=0; n<wifi.getSSIDCount(); ++n) {
+        mySerial.printf("ssid:%s psk:%s\n",
+            wifi.getSSID(n), wifi.getPSK(n));
     }
 }

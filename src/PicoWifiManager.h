@@ -24,6 +24,9 @@ class PicoWifiManager
         char* getSSID(int n) {return creds.ssid[n];}
         char* getPSK(int n) {return creds.psk[n];}
         String getIP() {return WiFi.localIP().toString().c_str();}
+        char* getMqBroker() {return creds.mqBroker;}
+        int getMqPort() {return creds.mqPort;}
+        char* getMqTopic() {return creds.mqTopic;}
 
     private:
         m_states_t m_state {CONNECT};
@@ -42,6 +45,9 @@ class PicoWifiManager
             char hostname[16] {};   // hostname for the pico
             uint signature {};      // write signature
             char apiKey[40] {};     // api key, e.g. for GroveStreams
+            char mqBroker[16] {};   // mqtt broker hostname
+            uint mqPort {};         // mqtt port number
+            char mqTopic[16] {};    // mqtt topic to publish to
             int ssidCount {};       // number of ssid/psk pairs
             char ssid[4][32] {};    // wifi ssids
             char psk[4][64] {};     // wifi psks
@@ -49,8 +55,8 @@ class PicoWifiManager
         PicoCreds creds;
         void writeCreds();          // write wifi credentials to EEPROM
         bool readCreds();           // read wifi credentials from EEPROM
-        static constexpr uint m_eepromSize {512};
+        static constexpr uint m_eepromSize {1024};
         static constexpr uint m_credsAddr {0};  // EEPROM start address for credentials
-        static constexpr uint32_t m_haveCreds {0xdeadbeef};
+        static constexpr uint32_t m_haveCreds {0xdeaddead};
         WiFiMulti multi;
 };

@@ -127,6 +127,20 @@ void PicoWifiManager::getCreds()
     nBytes = m_Serial.readBytesUntil('\n', creds.apiKey, sizeof(creds.apiKey)-1);
     creds.apiKey[nBytes] = '\0';
 
+    m_Serial.printf("\nEnter MQTT broker hostname: ");
+    nBytes = m_Serial.readBytesUntil('\n', creds.mqBroker, sizeof(creds.mqBroker)-1);
+    creds.mqBroker[nBytes] = '\0';
+
+    m_Serial.printf("\nEnter MQTT broker port number: ");
+    char txtPort[8] {};
+    nBytes = m_Serial.readBytesUntil('\n', txtPort, sizeof(txtPort)-1);
+    txtPort[nBytes] = '\0';
+    creds.mqPort = atoi(txtPort);
+
+    m_Serial.printf("\nEnter MQTT publish topic: ");
+    nBytes = m_Serial.readBytesUntil('\n', creds.mqTopic, sizeof(creds.mqTopic)-1);
+    creds.mqTopic[nBytes] = '\0';
+
     int n {0};
     while (n < 4) {
         m_Serial.printf("\nEnter #%d wifi SSID: ", n+1);
@@ -162,10 +176,13 @@ void PicoWifiManager::writeCreds()
 bool PicoWifiManager::readCreds()
 {
     EEPROM.get(m_credsAddr, creds);
-    for (int n=0; n<creds.ssidCount; ++n) {
-        multi.addAP(creds.ssid[n], creds.psk[n]);
+    if (creds.signature == m_haveCreds) {
+        for (int n=0; n<creds.ssidCount; ++n) {
+            multi.addAP(creds.ssid[n], creds.psk[n]);
+        }
+        return true;
     }
-    return (creds.signature == m_haveCreds);
+    return false;
 }
 
 void PicoWifiManager::resetMCU(int seconds)
