@@ -1,15 +1,18 @@
 // A very basic sketch to send an HTTP GET request for a web page.
 // Output is on Serial2 (aka UART-1).
 // For Raspbery Pi Pico W or 2W.
+// Pin assignments for Pico Carrier Board v1.0.
 // J.Christensen 24Jul2025
 
 #include <WiFi.h>
 #include <PicoWifiManager.h>        // https://github.com/JChristensen/PicoWifiManager
 #include <TimeLib.h>
+#include <Wire.h>
 
 // object instantiations and globals
 HardwareSerial& mySerial {Serial2}; // choose Serial, Serial1 or Serial2 here
 constexpr int txPin {4}, rxPin {5};
+constexpr int wireSdaPin {12}, wireSclPin {13};     // I2C pins for Wire
 constexpr uint32_t getInterval {600000}, retryInterval {60000}, respTimeout {60000};
 const char* host = "wttr.in";
 constexpr uint16_t port = 80;
@@ -18,12 +21,13 @@ PicoWifiManager wifi(mySerial);
 
 void setup()
 {
-    Serial2.setRX(rxPin); Serial2.setTX(txPin);
-    mySerial.begin(115200);
+    Wire.setSDA(wireSdaPin); Wire.setSCL(wireSclPin); Wire.setClock(400000);
+    Serial2.setTX(txPin); Serial2.setRX(rxPin);
+    mySerial.begin(115200); delay(500);
     while (!mySerial && millis() < 2000) delay(50);
     mySerial.printf("\n%s\nCompiled %s %s %s @ %d MHz\n",
-        __FILE__, __DATE__, __TIME__, BOARD_NAME, F_CPU / 1000000);
-    pinMode(waitLED, OUTPUT);
+        __FILE__, __DATE__, __TIME__, BOARD_NAME, F_CPU/1000000);
+
     wifi.begin();
 }
 

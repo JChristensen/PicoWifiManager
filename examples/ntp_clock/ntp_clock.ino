@@ -3,16 +3,17 @@
 // previously, then the sketch will prompt for them.
 // Hold the button down while resetting the MCU to change wifi credentials.
 // Display on SSD1306 OLED on i2c0 (Wire).
+// Pin assignments for Pico Carrier Board v1.0.
 // J.Christensen 21Jun2025
 
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include <JC_Button.h>          // https://github.com/JChristensen/JC_Button
 #include <PicoWifiManager.h>    // https://github.com/JChristensen/PicoWifiManager
-#include <Streaming.h>          // https://github.com/janelia-arduino/Streaming
 #include <Timezone.h>           // https://github.com/JChristensen/Timezone
 
 // constant parameters
+constexpr int txPin {4}, rxPin {5};
 constexpr int wireSdaPin {12}, wireSclPin {13};     // I2C pins for Wire
 constexpr int wifiLED {7};          // illuminates to indicate wifi connected
 constexpr int btnPin {14};          // force prompt for wifi credentials
@@ -32,7 +33,9 @@ void setup()
 {
     pinMode(wifiLED, OUTPUT);
     btn.begin();
-    Serial2.setTX(4); Serial2.setRX(5);
+    // move i2c0 off the default pins as we will use them for uart1 (aka Serial2)
+    Wire.setSDA(wireSdaPin); Wire.setSCL(wireSclPin); Wire.setClock(400000);
+    Serial2.setTX(txPin); Serial2.setRX(rxPin);
     mySerial.begin(115200);
     delay(500);
     while (!mySerial && millis() < 2000) delay(50);
@@ -40,7 +43,6 @@ void setup()
         __FILE__, __DATE__, __TIME__, BOARD_NAME, F_CPU/1000000);
 
     // set up and initialize the display
-    Wire.setSDA(wireSdaPin); Wire.setSCL(wireSclPin); Wire.setClock(400000);
     Wire.begin();
     // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
     if (!oled.begin(SSD1306_SWITCHCAPVCC, OLED_ADDRESS)) {

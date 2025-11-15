@@ -170,6 +170,7 @@ void PicoWifiManager::writeCreds()
 {
     EEPROM.put(m_credsAddr, creds);
     EEPROM.commit();
+    readCreds();    // read back to add the APs
 }
 
 // read wifi credentials from EEPROM
