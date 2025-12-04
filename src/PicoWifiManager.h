@@ -23,7 +23,8 @@ class PicoWifiManager
         int getSSIDCount() {return creds.ssidCount;}
         char* getSSID(int n) {return creds.ssid[n];}
         char* getPSK(int n) {return creds.psk[n];}
-        String getIP() {return WiFi.localIP().toString().c_str();}
+        //probably do not need getIP(), caller can get it directly.
+        //String getIP() {return WiFi.localIP().toString().c_str();}
         char* getMqBroker() {return creds.mqBroker;}
         int getMqPort() {return creds.mqPort;}
         char* getMqTopic() {return creds.mqTopic;}

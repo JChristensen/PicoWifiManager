@@ -14,6 +14,6 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/gpl.html>
 
 ## Introduction
-**PicoWifiManager** is an Arduino library that aims to make wifi connection and commuinication straightforward for the Raspberry Pi Pico.
+**PicoWifiManager** is an Arduino library that aims to make wifi connection and commuinication straightforward for the Raspberry Pi Pico W or Pico 2W.
 
 More documentation later.

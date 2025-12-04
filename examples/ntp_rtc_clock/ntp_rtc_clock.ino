@@ -21,6 +21,7 @@
 #include <Timezone.h>           // https://github.com/JChristensen/Timezone
 
 // constant parameters
+constexpr int txPin {4}, rxPin {5}; // pins for Serial2
 constexpr int wireSdaPin {12}, wireSclPin {13};     // I2C pins for Wire
 constexpr int wire1SdaPin {26}, wire1SclPin {27};   // I2C pins for Wire1
 constexpr uint8_t ds_addr {0x68}, mcp_addr {0x6f};
@@ -33,7 +34,7 @@ constexpr int OLED_ADDRESS {0x3c};  // OLED I2C address
 constexpr uint8_t RTC_SET_ADDR{92}; // MCP7941x SRAM address where the set time is saved
 
 // object instantiations and globals
-HardwareSerial& mySerial {Serial};          // choose Serial, Serial1 or Serial2 here
+HardwareSerial& mySerial {Serial2}; // choose Serial, Serial1 or Serial2 here
 PicoWifiManager wifi(mySerial);
 Adafruit_SSD1306 oled(OLED_WIDTH, OLED_HEIGHT, &Wire);
 GenericRTC* rtc;
@@ -44,15 +45,18 @@ time_t rtcLastSet;  // for MCP RTC only
 
 void setup()
 {
+    Serial2.setTX(txPin); Serial2.setRX(rxPin);
+    Wire.setSDA(wireSdaPin); Wire.setSCL(wireSclPin); Wire.setClock(400000);
+    Wire1.setSDA(wire1SdaPin); Wire1.setSCL(wire1SclPin); Wire1.setClock(400000);
     pinMode(wifiLED, OUTPUT);
     btn.begin();
-    mySerial.begin(115200);
+
+    mySerial.begin(115200); delay(500);
     while (!mySerial && millis() < 2000) delay(50);
     mySerial.printf("\n%s\nCompiled %s %s %s @ %d MHz\n",
         __FILE__, __DATE__, __TIME__, BOARD_NAME, F_CPU/1000000);
 
     // set up and initialize the display
-    Wire.setSDA(wireSdaPin); Wire.setSCL(wireSclPin); Wire.setClock(400000);
     Wire.begin();
     // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
     if (!oled.begin(SSD1306_SWITCHCAPVCC, OLED_ADDRESS)) {
@@ -66,7 +70,6 @@ void setup()
     oled.setTextColor(SSD1306_WHITE);
 
     // set up and initialize the RTC
-    Wire1.setSDA(wire1SdaPin); Wire1.setSCL(wire1SclPin); Wire1.setClock(400000);
     pinMode(RTC_1HZ_PIN, INPUT_PULLUP);
     attachInterrupt(digitalPinToInterrupt(RTC_1HZ_PIN), incrementTime, FALLING);
 
@@ -82,6 +85,7 @@ void setup()
     // check to see if the user wants to enter new wifi credentials, else initialize wifi.
     btn.read();
     if (btn.isPressed()) wifi.getCreds();
+    btn.read();
     oled.clearDisplay();
     oled.setCursor(0, 0);
     oled.println("Connecting\nto wifi...");
@@ -324,7 +328,7 @@ void displayInfo()
     oled.println(wifi.getHostname());
     oled.print(WiFi.localIP());
     oled.printf(" %d dBm\n", WiFi.RSSI());
-    oled.println(wifi.getSSID());
+    oled.println(WiFi.SSID());
     oled.println(BOARD_NAME);
     float pico_c = analogReadTemp();
     float pico_f = 1.8 * pico_c + 32.0;
