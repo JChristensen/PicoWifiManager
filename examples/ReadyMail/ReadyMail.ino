@@ -86,6 +86,7 @@ void setup()
     msg.text.body(bodyText);        // add the body content
     msg.timestamp = time(nullptr);  // set message timestamp
     smtp.send(msg, NOTIFY);
+    smtp.stop();    // stop the server connection and release the allocated resources.
 }
 
 void loop()
