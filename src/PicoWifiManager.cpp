@@ -52,8 +52,15 @@ bool PicoWifiManager::run()
                     millis(), WiFi.SSID().c_str(),
                     WiFi.localIP().toString().c_str(), creds.hostname, WiFi.RSSI());
                 m_retryCount = 0;
-                m_Serial.printf("%d Starting NTP\n", millis());
-                NTP.begin("pool.ntp.org");
+                m_Serial.printf("%d Starting NTP %s", millis(), m_ntp1);
+                if (m_ntp2 == nullptr) {
+                    m_Serial << endl;
+                    NTP.begin(m_ntp1);
+                }
+                else {
+                    m_Serial.printf(" %s\n", m_ntp2);
+                    NTP.begin(m_ntp1, m_ntp2);
+                }
                 m_waitTimer = millis();
                 m_ntpStart = m_waitTimer;
             }

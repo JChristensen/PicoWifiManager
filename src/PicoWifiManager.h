@@ -14,6 +14,8 @@ class PicoWifiManager
     public:
         PicoWifiManager(HardwareSerial& hws=Serial)
             : m_Serial{hws} {}
+        void setNTP(const char* ntp1) {m_ntp1=ntp1;}    // set ntp server(s)
+        void setNTP(const char* ntp1, const char* ntp2) {m_ntp1=ntp1; m_ntp2=ntp2;}
         void begin();
         bool run();
         void getCreds();            // get wifi credentials from the user
@@ -40,6 +42,9 @@ class PicoWifiManager
         static constexpr uint m_monitorWait {1000};
         static constexpr int m_maxRetries {10};
         static constexpr uint m_maxNtpWait {60000};
+        const char* m_ntpDefault {"pool.ntp.org"};
+        const char* m_ntp1 {m_ntpDefault};
+        const char* m_ntp2 {nullptr};
         uint m_waitTimer;
         uint m_ntpStart;
         struct PicoCreds {
