@@ -23,6 +23,7 @@ constexpr int OLED_ADDRESS {0x3c};  // OLED I2C address
 
 // object instantiations and globals
 HardwareSerial& mySerial {Serial2};  // choose Serial, Serial1 or Serial2 here
+//const char* ntpServer {"dns1.lan"};
 PicoWifiManager wifi(mySerial);
 Adafruit_SSD1306 oled(OLED_WIDTH, OLED_HEIGHT, &Wire);
 Button btn(btnPin);
@@ -62,6 +63,7 @@ void setup()
     oled.setCursor(0, 0);
     oled.println("Connecting\nto wifi...");
     oled.display();
+    //wifi.setNTP(ntpServer);
     wifi.begin();
 }
 
@@ -124,8 +126,8 @@ void loop()
 // update oled display
 void displayTime(time_t t, bool localTime)
 {
-    constexpr TimeChangeRule edt {"EDT", Second, Sun, Mar, 2, -240};  // Daylight time = UTC - 4 hours
-    constexpr TimeChangeRule est {"EST", First, Sun, Nov, 2, -300};   // Standard time = UTC - 5 hours
+    const TimeChangeRule edt {"EDT", Second, Sun, Mar, 2, -240};  // Daylight time = UTC - 4 hours
+    const TimeChangeRule est {"EST", First, Sun, Nov, 2, -300};   // Standard time = UTC - 5 hours
     static Timezone eastern(edt, est);
 
     constexpr int MSG_SIZE {64};

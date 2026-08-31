@@ -34,7 +34,7 @@ constexpr int OLED_ADDRESS {0x3c};  // OLED I2C address
 constexpr uint8_t RTC_SET_ADDR{92}; // MCP7941x SRAM address where the set time is saved
 
 // object instantiations and globals
-HardwareSerial& mySerial {Serial2}; // choose Serial, Serial1 or Serial2 here
+HardwareSerial& mySerial {Serial};  // choose Serial, Serial1 or Serial2 here
 PicoWifiManager wifi(mySerial);
 Adafruit_SSD1306 oled(OLED_WIDTH, OLED_HEIGHT, &Wire);
 GenericRTC* rtc;
@@ -175,7 +175,7 @@ GenericRTC* findRTC()
 {
     Wire1.beginTransmission(ds_addr);
     if (Wire1.endTransmission() == 0) {
-        Serial << "Found DS323x RTC\n";
+        mySerial << "Found DS323x RTC\n";
         DS3232RTC* ds_rtc{ new DS3232RTC{Wire1} };
         ds_rtc->begin();
         ds_rtc->squareWave(DS3232RTC::SQWAVE_1_HZ);   // 1 Hz square wave
@@ -191,7 +191,7 @@ GenericRTC* findRTC()
 
     Wire1.beginTransmission(mcp_addr);
     if (Wire1.endTransmission() == 0) {
-        Serial << "Found MCP7941x RTC\n";
+        mySerial << "Found MCP7941x RTC\n";
         MCP79412RTC* mcp_rtc{ new MCP79412RTC{Wire1} };
         mcp_rtc->begin();
         if (!mcp_rtc->isRunning()) mcp_rtc->set(0);        // start the rtc if not running
@@ -265,8 +265,8 @@ void setRTC()
 // update oled display
 void displayTime(time_t t, char which)
 {
-    constexpr TimeChangeRule edt {"EDT", Second, Sun, Mar, 2, -240};  // Daylight time = UTC - 4 hours
-    constexpr TimeChangeRule est {"EST", First, Sun, Nov, 2, -300};   // Standard time = UTC - 5 hours
+    const TimeChangeRule edt {"EDT", Second, Sun, Mar, 2, -240};  // Daylight time = UTC - 4 hours
+    const TimeChangeRule est {"EST", First, Sun, Nov, 2, -300};   // Standard time = UTC - 5 hours
     static Timezone eastern(edt, est);
 
     constexpr int MSG_SIZE {64};
